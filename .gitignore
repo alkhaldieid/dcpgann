@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pth
+.env
+.venv
+artifacts/
+*.pt
+*.png
+*.jpg
+*.jpeg
+.DS_Store

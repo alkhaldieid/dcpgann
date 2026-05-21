@@ -1,53 +1,174 @@
-# Differential Cartesian Genetic Programming for IDC Classification
+# DCPGANN: Reproducible IDC Ensemble Experiments
 
-This repository provides a research-inspired implementation of **Ensemble Optimization for Invasive Ductal Carcinoma (IDC) Classification Using Differential Cartesian Genetic Programming**. It trains four CNN backbones on the IDC histopathology tiles dataset, then optimizes ensemble weights via differential cartesian genetic programming (DCGP) or differential evolution to maximize balanced accuracy or F1 on a validation split.
+This repository contains a research-grade PyTorch implementation for IDC-positive
+versus IDC-negative histopathology patch classification, inspired by:
 
-## Features
-- Torch-based training loop with gradient clipping and cosine learning-rate schedule.
-- Ready-to-use backbones tailored to the paper: `resnet50_end_to_end`, ImageNet-initialized `resnet50_partial` with the last 69 layers unfrozen, fully finetuned ImageNet `vgg19_finetune`, and partially unfrozen ImageNet `densenet121_partial` (429 trainable layers).
-- Automated validation/test evaluation and checkpointing per backbone.
-- Ensemble optimizer with a DCGP searcher (via the `dcgp` library) and a SciPy differential-evolution fallback.
+> Eid Alkhaldi and Ehsan Salari, "Ensemble Optimization for Invasive Ductal
+> Carcinoma (IDC) Classification Using Differential Cartesian Genetic
+> Programming," IEEE Access, 2022. DOI: `10.1109/ACCESS.2022.3228176`.
 
-## Project structure
-- `src/dcpgann/` – library code (data module, models, training utilities, ensemble optimizer).
-- `src/train.py` – CLI entrypoint to train backbones and compute the optimized ensemble.
-- `requirements.txt` – Python dependencies.
+The code is intentionally structured around reproducibility: deterministic
+splits, saved experiment configuration, per-backbone checkpoints, individual
+model metrics, equal-weight ensemble metrics, and optimized ensemble metrics.
 
-## Setup
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
-```
+## What This Code Does
+
+- Trains CNN backbones for binary IDC classification.
+- Supports the paper-style ensemble backbones:
+  - `resnet50_end_to_end`
+  - `resnet50_partial`
+  - `vgg19_finetune`
+  - `densenet121_partial`
+- Provides a transparent weighted-logit ensemble baseline using differential
+  evolution.
+- Provides a compact Cartesian-program ensemble optimizer over model
+  probabilities, with the evolved graph saved in `experiment.json`.
+- Reports accuracy, balanced accuracy, precision, sensitivity/recall,
+  specificity, F1, ROC-AUC, and confusion-matrix counts.
 
 ## Dataset
-Place the IDC dataset in a directory with class-labeled subfolders:
-```
+
+Use the public IDC benchmark commonly distributed as:
+
+- Dataset: **Breast Histopathology Images**
+- Kaggle: `paultimothymooney/breast-histopathology-images`
+- Original archive name: `IDC_regular_ps50_idx5.zip`
+- Task: binary patch classification, `0` for non-IDC and `1` for IDC-positive
+
+The current loader expects a class-folder layout:
+
+```text
 /path/to/idc/
-    0/  # negative tiles
-    1/  # IDC-positive tiles
+  0/
+    image_class0.png
+  1/
+    image_class1.png
 ```
-You can obtain the dataset from Kaggle's "Breast Histopathology Images" release or another equivalent IDC tile dataset.
 
-## Usage
-Train the four backbone variants and optimize ensemble weights:
+If you download the original nested patient-folder layout, create or symlink a
+flat class-folder copy before running experiments.
+
+## Installation
+
+Recommended `uv` workflow:
+
 ```bash
-python -m src.train /path/to/idc --output artifacts --epochs 10 --metric balanced_accuracy
+uv sync --extra dev
 ```
-Key arguments:
-- `--backbones`: comma-separated backbones (defaults to the four predefined architectures above; must contain exactly four entries for the ensemble).
-- `--metric`: `balanced_accuracy` or `f1` for ensemble objective.
-- `--ensemble_method`: `dcgp` (default) or `scipy` for weight search.
-- `--image_size`: resize for tiles (default 224).
-- `--val_split` / `--test_split`: fractions for validation/test splits.
 
-Outputs are written to `--output` (checkpoints per backbone and `experiment.json` containing histories and ensemble weights).
+Then run commands through `uv run`:
 
-## Notes
-- Training defaults are conservative (5 epochs). Increase for thorough experiments.
-- The ensemble optimizer uses DCGP by default; you can adjust population size, generations, and DCGP hyperparameters in `dcpgann/ensemble.py`.
-- To continue from saved checkpoints, load the `.pt` files and rerun ensemble optimization on fresh logits.
+```bash
+uv run pytest
+uv run dcpgann-train /path/to/idc --config configs/paper_2022_idc.json --epochs 1 --backbones simple_cnn
+```
 
-## License
-This codebase is provided for research and educational purposes. Ensure dataset licenses permit your use case.
+Classic `venv` workflow:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install --upgrade pip
+python3 -m pip install -e ".[dev]"
+```
+
+## Smoke Test
+
+Run unit tests first:
+
+```bash
+uv run pytest
+```
+
+For a tiny local sanity run, edit `configs/smoke_test.json` so `data.data_dir`
+points to a small two-class folder, then run:
+
+```bash
+uv run dcpgann-train --config configs/smoke_test.json
+```
+
+This uses `simple_cnn` for one epoch and is meant to validate the local
+environment, not reproduce the paper.
+
+## Research Notebooks
+
+The `notebooks/` directory contains explanation notebooks that document how the
+dataset, baselines, backbones, ensemble optimizer, and paper-style reproduction
+fit together. They are narrative companions to the CLI, not the source of truth.
+
+```bash
+uv sync --extra dev --extra notebooks
+uv run jupyter lab notebooks
+```
+
+Read them in order:
+
+1. `01_dataset_audit.ipynb`
+2. `02_baseline_training.ipynb`
+3. `03_backbone_comparison.ipynb`
+4. `04_ensemble_optimization.ipynb`
+5. `05_paper_results_reproduction.ipynb`
+
+## Paper-Style Experiment
+
+Edit `configs/paper_2022_idc.json` and set:
+
+```json
+"data_dir": "/absolute/path/to/idc"
+```
+
+Then run:
+
+```bash
+uv run dcpgann-train --config configs/paper_2022_idc.json
+```
+
+Useful overrides:
+
+```bash
+uv run dcpgann-train /path/to/idc --config configs/paper_2022_idc.json --epochs 10
+uv run dcpgann-train /path/to/idc --config configs/paper_2022_idc.json --ensemble_method scipy
+uv run dcpgann-train /path/to/idc --config configs/paper_2022_idc.json --output artifacts/local_mps
+```
+
+On Apple Silicon, the trainer automatically uses `mps` when PyTorch reports it
+as available; otherwise it falls back to CPU. For 24 GB unified memory, start
+with `batch_size` 16 or 32 for the ImageNet backbones if 64 is too large.
+
+Outputs are written under `artifacts/paper_2022_idc/` by default:
+
+- `splits.json`: exact train/validation/test indices
+- `checkpoints/*.pt`: best state per backbone
+- `classification_report.txt`: sklearn test report
+- `experiment.json`: full reproducibility record and metrics
+
+## Interpreting Results
+
+The repository reports both:
+
+- **Equal-weight ensemble**: a sanity baseline.
+- **Optimized ensemble**: selected by validation performance and evaluated once
+  on the held-out test split.
+
+Do not compare a new run to the paper unless the dataset copy, preprocessing,
+split protocol, seeds, backbone settings, and training budget are documented.
+The code is designed to make those assumptions visible rather than bury them.
+
+## Development Workflow
+
+```bash
+uv run pytest
+uv run python -m compileall -q src tests
+git status --short
+git add README.md pyproject.toml uv.lock requirements.txt configs notebooks src tests
+git commit -m "Professionalize reproducible IDC ensemble pipeline"
+git push origin main
+```
+
+## Research Integrity Notes
+
+This implementation is written to be explicit and auditable. If your goal is to
+claim exact paper reproduction, keep the paper configuration immutable, preserve
+the generated `splits.json`, and report all model, ensemble, and baseline
+metrics. If your goal is to improve on the paper, create a new config and report
+it as a modernized experiment rather than overwriting the historical protocol.

@@ -1,8 +1,10 @@
-"""Differential Cartesian Genetic Programming ensemble for IDC classification.
+"""Reproducible ensemble experiments for IDC classification.
 
-This package provides training utilities, models, and ensemble optimization
-logic used in the research-inspired implementation.
+This package provides data, model, training, and ensemble optimization utilities
+for auditing and extending IDC classification experiments.
 """
+
+__version__ = "0.1.0"
 
 __all__ = [
     "data",

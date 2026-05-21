@@ -1,0 +1,43 @@
+{
+  "seed": 42,
+  "output_dir": "artifacts/paper_2022_idc",
+  "backbones": [
+    "resnet50_end_to_end",
+    "resnet50_partial",
+    "vgg19_finetune",
+    "densenet121_partial"
+  ],
+  "data": {
+    "data_dir": "/absolute/path/to/idc",
+    "batch_size": 64,
+    "num_workers": 4,
+    "val_split": 0.15,
+    "test_split": 0.15,
+    "image_size": 224,
+    "seed": 42,
+    "patient_level_split": false
+  },
+  "train": {
+    "epochs": 30,
+    "learning_rate": 0.0003,
+    "weight_decay": 0.0001,
+    "max_grad_norm": 5.0,
+    "seed": 42,
+    "use_amp": true,
+    "class_weighted_loss": true,
+    "early_stopping_patience": 8
+  },
+  "ensemble": {
+    "method": "cgp",
+    "metric": "balanced_accuracy",
+    "seed": 42,
+    "cgp_nodes": 16,
+    "cgp_population": 40,
+    "cgp_generations": 250,
+    "cgp_elite": 6,
+    "cgp_mutation_rate": 0.1,
+    "cgp_constant_scale": 1.0,
+    "scipy_pop_size": 20,
+    "scipy_max_iter": 100
+  }
+}

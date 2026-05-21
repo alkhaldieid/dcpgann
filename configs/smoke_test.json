@@ -1,0 +1,31 @@
+{
+  "seed": 7,
+  "output_dir": "artifacts/smoke_test",
+  "backbones": ["simple_cnn"],
+  "data": {
+    "data_dir": "/absolute/path/to/tiny-idc",
+    "batch_size": 4,
+    "num_workers": 0,
+    "val_split": 0.2,
+    "test_split": 0.2,
+    "image_size": 64,
+    "seed": 7,
+    "patient_level_split": false
+  },
+  "train": {
+    "epochs": 1,
+    "learning_rate": 0.001,
+    "weight_decay": 0.0001,
+    "max_grad_norm": 5.0,
+    "seed": 7,
+    "use_amp": false,
+    "class_weighted_loss": true
+  },
+  "ensemble": {
+    "method": "scipy",
+    "metric": "balanced_accuracy",
+    "seed": 7,
+    "scipy_pop_size": 4,
+    "scipy_max_iter": 2
+  }
+}

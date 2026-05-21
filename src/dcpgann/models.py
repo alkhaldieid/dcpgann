@@ -1,7 +1,7 @@
 """Model definitions for IDC classification."""
 from __future__ import annotations
 
-from typing import Dict
+from typing import Callable, Dict
 
 import torch
 from torch import nn
@@ -91,8 +91,15 @@ def build_densenet121_partial(num_classes: int = 2, trainable_layers: int = 429)
     return model
 
 
-def list_backbones() -> Dict[str, nn.Module]:
+def count_parameters(model: nn.Module) -> Dict[str, int]:
+    trainable = sum(param.numel() for param in model.parameters() if param.requires_grad)
+    total = sum(param.numel() for param in model.parameters())
+    return {"total": total, "trainable": trainable}
+
+
+def list_backbones() -> Dict[str, Callable[..., nn.Module]]:
     return {
+        "simple_cnn": SimpleCNN,
         "resnet50_end_to_end": build_resnet50_end_to_end,
         "resnet50_partial": build_resnet50_partial,
         "vgg19_finetune": build_vgg19_finetune,

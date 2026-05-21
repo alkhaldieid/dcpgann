@@ -4,7 +4,10 @@ __pycache__/
 *.pth
 .env
 .venv
+.uv-cache/
+*.egg-info/
 artifacts/
+notebooks/.ipynb_checkpoints/
 *.pt
 *.png
 *.jpg
